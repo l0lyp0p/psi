@@ -8,8 +8,9 @@ public class Graphe
     int[,] matriceAdjacence;
     bool estSymetrique;
 
-    public Dictionary<int, List<int>> ListeAdjacence => listeAdjacence;
-    public int[,] MatriceAdjacence => matriceAdjacence;
+    public Dictionary<int, List<int>> ListeAdjacence { get;}
+    public int[,] MatriceAdjacence { get;}
+
 
     // Constructeur 
     public Graphe(string filename)
