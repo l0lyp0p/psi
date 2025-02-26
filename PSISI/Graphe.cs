@@ -21,7 +21,6 @@ public class Graphe
         ChargerGrapheDepuisFichier(filename);
     }
 
-    // Méthodes publiques
     public List<int> BFS(int depart)
     {
         depart--; // 
