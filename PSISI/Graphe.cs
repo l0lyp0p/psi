@@ -85,8 +85,7 @@ public class Graphe
 
     public bool EstConnexe()
     {
-        if (noeuds.Count == 0) return true;
-        return BFS(1).Count == noeuds.Count;
+        return noeuds.Count == 0 || BFS(1).Count == noeuds.Count;
     }
 
     public bool ContientCycle()
