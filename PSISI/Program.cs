@@ -6,7 +6,7 @@
         {
             Graphe graphe = new Graphe("soc-karate.mtx");
             Console.WriteLine("Parcours BFS : " + string.Join(", ", graphe.BFS(1)));
-            Console.WriteLine("Parcours DFS : " + string.Join(", ", graphe.DFS(1)));
+            Console.WriteLine("Parcours DFS : " + string.Join(", ", graphe.DFS(34)));
             Console.WriteLine("Graphe connexe : " + graphe.EstConnexe());
             Console.WriteLine("Présence de cycles : " + graphe.ContientCycle());
             Application.Run(new GrapheVisualiseur(graphe));

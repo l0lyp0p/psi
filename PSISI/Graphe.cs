@@ -5,7 +5,6 @@ public class Graphe
     List<Noeud> noeuds;
     Dictionary<int, List<int>> listeAdjacence;
     int[,] matriceAdjacence;
-    bool estSymetrique;
 
     public Dictionary<int, List<int>> ListeAdjacence => listeAdjacence;
 
@@ -18,7 +17,6 @@ public class Graphe
         noeuds = new List<Noeud>();
         listeAdjacence = new Dictionary<int, List<int>>();
         matriceAdjacence = new int[0, 0];
-        estSymetrique = false;
         ChargerGrapheDepuisFichier(filename);
     }
 
@@ -136,15 +134,6 @@ public class Graphe
         int taille = int.Parse(enTete[0]);
         int aretes = int.Parse(enTete[2]);
 
-        foreach (string ligne in lignes)
-        {
-            if (ligne.Contains("symmetric"))
-            {
-                estSymetrique = true;
-                break;
-            }
-        }
-
         matriceAdjacence = new int[taille, taille];
         for (int i = 1; i <= taille; i++)
         {
@@ -159,10 +148,6 @@ public class Graphe
             int v = int.Parse(arete[1]);
 
             AjouterArete(u, v);
-            if (estSymetrique && u != v)
-            {
-                AjouterArete(v, u);
-            }
         }
     }
 
@@ -176,6 +161,10 @@ public class Graphe
         if (!listeAdjacence[u].Contains(v))
         {
             listeAdjacence[u].Add(v);
+        }
+        if (!listeAdjacence[v].Contains(u))
+        {
+            listeAdjacence[v].Add(u);
         }
         matriceAdjacence[u - 1, v - 1] = 1;
     }
