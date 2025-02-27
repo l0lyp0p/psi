@@ -62,7 +62,7 @@ public class GrapheVisualiseur : Form
 
     private void DessinerLiens(Graphics g)
     {
-        using (Pen pen = new Pen(Color.FromArgb(220, 30, 30, 30), 4f))
+        using (Pen pen = new Pen(Color.FromArgb(220, 30, 30, 30), 2))
         {
             foreach (var (source, destinations) in _graphe.ListeAdjacence)
             {

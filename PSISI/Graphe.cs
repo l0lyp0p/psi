@@ -2,17 +2,17 @@
 
 public class Graphe
 {
-    
     List<Noeud> noeuds;
     Dictionary<int, List<int>> listeAdjacence;
     int[,] matriceAdjacence;
     bool estSymetrique;
 
     public Dictionary<int, List<int>> ListeAdjacence => listeAdjacence;
-    public int[,] MatriceAdjacence => matriceAdjacence;
 
-
-    // Constructeur 
+    /// <summary>
+    /// Constructeur qui charge un graphe depuis un fichier.
+    /// </summary>
+    /// <param name="filename">Nom du fichier contenant le graphe.</param>
     public Graphe(string filename)
     {
         noeuds = new List<Noeud>();
@@ -22,9 +22,14 @@ public class Graphe
         ChargerGrapheDepuisFichier(filename);
     }
 
+    /// <summary>
+    /// Effectue un parcours en largeur (BFS) du graphe.
+    /// </summary>
+    /// <param name="depart">Noeud de départ.</param>
+    /// <returns>Liste des noeuds visités dans l'ordre.</returns>
     public List<int> BFS(int depart)
     {
-        depart--; // 
+        depart--;
         HashSet<int> visite = new HashSet<int>();
         Queue<int> file = new Queue<int>();
         List<int> ordreVisite = new List<int>();
@@ -35,9 +40,9 @@ public class Graphe
         while (file.Count > 0)
         {
             int noeud = file.Dequeue();
-            ordreVisite.Add(noeud + 1); 
+            ordreVisite.Add(noeud + 1);
 
-            foreach (int voisin in listeAdjacence[noeud + 1]) 
+            foreach (int voisin in listeAdjacence[noeud + 1])
             {
                 int voisinIndex = voisin - 1;
                 if (!visite.Contains(voisinIndex))
@@ -47,13 +52,17 @@ public class Graphe
                 }
             }
         }
-
         return ordreVisite;
     }
 
+    /// <summary>
+    /// Effectue un parcours en profondeur (DFS) du graphe.
+    /// </summary>
+    /// <param name="depart">Noeud de départ.</param>
+    /// <returns>Liste des noeuds visités dans l'ordre.</returns>
     public List<int> DFS(int depart)
     {
-        depart--; 
+        depart--;
         HashSet<int> visite = new HashSet<int>();
         Stack<int> pile = new Stack<int>();
         List<int> ordreVisite = new List<int>();
@@ -67,7 +76,7 @@ public class Graphe
             ordreVisite.Add(noeud + 1);
 
             List<int> voisins = new List<int>(listeAdjacence[noeud + 1]);
-            voisins.Reverse(); 
+            voisins.Reverse();
 
             foreach (int voisin in voisins)
             {
@@ -79,15 +88,22 @@ public class Graphe
                 }
             }
         }
-
         return ordreVisite;
     }
 
+    /// <summary>
+    /// Vérifie si le graphe est connexe.
+    /// </summary>
+    /// <returns>Vrai si le graphe est connexe, faux sinon.</returns>
     public bool EstConnexe()
     {
         return noeuds.Count == 0 || BFS(1).Count == noeuds.Count;
     }
 
+    /// <summary>
+    /// Vérifie si le graphe contient un cycle.
+    /// </summary>
+    /// <returns>Vrai si le graphe contient un cycle, faux sinon.</returns>
     public bool ContientCycle()
     {
         HashSet<int> visite = new HashSet<int>();
@@ -99,13 +115,15 @@ public class Graphe
         return false;
     }
 
-    
+    /// <summary>
+    /// Charge un graphe depuis un fichier.
+    /// </summary>
+    /// <param name="cheminFichier">Chemin du fichier contenant le graphe.</param>
     private void ChargerGrapheDepuisFichier(string cheminFichier)
     {
         string[] lignes = File.ReadAllLines(cheminFichier);
         List<string> donnees = new List<string>();
 
-       
         foreach (string ligne in lignes)
         {
             if (!ligne.StartsWith("%") && !string.IsNullOrWhiteSpace(ligne))
@@ -114,12 +132,10 @@ public class Graphe
             }
         }
 
-        
         string[] enTete = donnees[0].Split(' ');
         int taille = int.Parse(enTete[0]);
         int aretes = int.Parse(enTete[2]);
 
-        
         foreach (string ligne in lignes)
         {
             if (ligne.Contains("symmetric"))
@@ -129,7 +145,6 @@ public class Graphe
             }
         }
 
-        
         matriceAdjacence = new int[taille, taille];
         for (int i = 1; i <= taille; i++)
         {
@@ -137,7 +152,6 @@ public class Graphe
             listeAdjacence[i] = new List<int>();
         }
 
-      
         for (int i = 1; i <= aretes; i++)
         {
             string[] arete = donnees[i].Split(' ');
@@ -152,22 +166,31 @@ public class Graphe
         }
     }
 
+    /// <summary>
+    /// Ajoute une arête au graphe.
+    /// </summary>
+    /// <param name="u">Premier noeud.</param>
+    /// <param name="v">Deuxième noeud.</param>
     private void AjouterArete(int u, int v)
     {
-        
         if (!listeAdjacence[u].Contains(v))
         {
             listeAdjacence[u].Add(v);
         }
-
-        
         matriceAdjacence[u - 1, v - 1] = 1;
     }
 
+    /// <summary>
+    /// Recherche récursive pour détecter un cycle dans le graphe.
+    /// </summary>
+    /// <param name="noeud">Noeud actuel.</param>
+    /// <param name="parent">Noeud parent.</param>
+    /// <param name="visite">Ensemble des noeuds visités.</param>
+    /// <returns>Vrai si un cycle est trouvé, faux sinon.</returns>
     private bool DFSRecursifCycle(int noeud, int parent, HashSet<int> visite)
     {
         visite.Add(noeud);
-        foreach (int voisin in listeAdjacence[noeud + 1]) 
+        foreach (int voisin in listeAdjacence[noeud + 1])
         {
             int voisinIndex = voisin - 1;
             if (!visite.Contains(voisinIndex))
