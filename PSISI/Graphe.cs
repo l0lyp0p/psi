@@ -1,6 +1,6 @@
 ﻿using PSISI;
 
-public class Graphe
+public class Graphe<T>
 {
     List<Noeud> noeuds;
     Dictionary<int, List<int>> listeAdjacence;
