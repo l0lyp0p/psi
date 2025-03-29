@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace PSISI
 {
-    public class Noeud
+    public class Noeud<T>
     {
         public int Id { get; set; }
     }
