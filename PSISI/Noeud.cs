@@ -9,7 +9,9 @@ namespace PSISI2
     {
         public int Id { get; }
         public T Value { get; }
-
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+    
         public Noeud(int id, T value)
         {
             Id = id;
