@@ -1,4 +1,8 @@
-﻿namespace PSISI
+using MySql.Data.MySqlClient;
+using System;
+using System.Collections.Generic;
+
+namespace PSI
 {
     public static class Affichage
     {
@@ -59,6 +63,12 @@
                 "Ajouter une commande",
                 "Ajouter un client entreprise",
                 "Ajouter un cuisinier",
+                "Simuler une commande",
+                "Statistiques des livraisons",
+                "Commandes par période",
+                "Moyenne des prix des commandes",
+                "Moyenne des comptes clients",
+                "Commandes par client",
                 "Quitter l'application"
             };
 
@@ -252,6 +262,269 @@
             string idUtilisateur = Console.ReadLine();
 
             return (telephone, nom, prenom, adresse, email, idUtilisateur);
+        }
+
+        public static void AfficherCommandes()
+        {
+            Console.Clear();
+            AfficherEntete("SIMULATION DE COMMANDE");
+
+            // Simuler la création d'une commande
+            Console.WriteLine("Simulation de la création d'une commande...");
+
+            // Calcul du prix de la commande
+            float prixCommande = CalculerPrixCommande();
+            Console.WriteLine($"Prix de la commande : {prixCommande}€");
+
+            // Calcul du chemin le plus court
+            string chemin = CalculerCheminPlusCourt();
+            Console.WriteLine($"Chemin le plus court pour la livraison : {chemin}");
+
+            Affichage.AttendreInteraction();
+        }
+
+        private static float CalculerPrixCommande()
+        {
+            // Logique de calcul du prix de la commande
+            // Ici, nous simulons un prix fixe
+            return 25.50f;
+        }
+
+        private static string CalculerCheminPlusCourt()
+        {
+            // Logique de calcul du chemin le plus court
+            // Ici, nous simulons un chemin fixe
+            return "Chemin A -> B -> C";
+        }
+
+        public static void AfficherStatistiquesLivraisons()
+        {
+            Console.Clear();
+            AfficherEntete("STATISTIQUES DES LIVRAISONS");
+
+            // Récupérer et afficher les livraisons par cuisinier
+            var livraisonsParCuisinier = ObtenirLivraisonsParCuisinier();
+            foreach (var livraison in livraisonsParCuisinier)
+            {
+                Console.WriteLine($"{livraison.Key} : {livraison.Value} livraisons");
+            }
+
+            Affichage.AttendreInteraction();
+        }
+
+        private static Dictionary<string, int> ObtenirLivraisonsParCuisinier()
+        {
+            var livraisonsParCuisinier = new Dictionary<string, int>();
+
+            try
+            {
+                using var connection = new MySqlConnection("SERVER=localhost;PORT=3306;DATABASE=liv_in_paris;UID=root;PASSWORD=root");
+                connection.Open();
+
+                using var cmd = new MySqlCommand(
+                    @"SELECT CONCAT(c.nom, ' ', c.prénom) AS nom_cuisinier, COUNT(*) AS nombre_livraisons
+                      FROM Ligne_Commande lc
+                      JOIN Plat p ON lc.idplat = p.idPlat
+                      JOIN Cuisinier c ON p.telephone_C = c.telephone_C
+                      GROUP BY c.nom, c.prénom",
+                    connection);
+
+                using var reader = cmd.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    string nomCuisinier = reader["nom_cuisinier"].ToString();
+                    int nombreLivraisons = reader.GetInt32("nombre_livraisons");
+                    livraisonsParCuisinier[nomCuisinier] = nombreLivraisons;
+                }
+
+                connection.Close();
+            }
+            catch (Exception ex)
+            {
+                Affichage.AfficherErreur(ex.Message);
+            }
+
+            return livraisonsParCuisinier;
+        }
+
+        public static void AfficherCommandesParPeriode()
+        {
+            Console.Clear();
+            AfficherEntete("COMMANDES PAR PÉRIODE");
+
+            Console.Write("Entrez la date de début (AAAA-MM-JJ): ");
+            string dateDebut = Console.ReadLine();
+            Console.Write("Entrez la date de fin (AAAA-MM-JJ): ");
+            string dateFin = Console.ReadLine();
+
+            // Logique pour afficher les commandes par période
+            var commandes = ObtenirCommandesParPeriode(dateDebut, dateFin);
+            AfficherListe(commandes, "Commandes par période");
+        }
+
+        private static List<string> ObtenirCommandesParPeriode(string dateDebut, string dateFin)
+        {
+            var commandes = new List<string>();
+
+            try
+            {
+                using var connection = new MySqlConnection("SERVER=localhost;PORT=3306;DATABASE=liv_in_paris;UID=root;PASSWORD=root");
+                connection.Open();
+
+                using var cmd = new MySqlCommand(
+                    "SELECT id_commande, date_commande FROM Commande WHERE date_commande BETWEEN @dateDebut AND @dateFin",
+                    connection);
+                cmd.Parameters.AddWithValue("@dateDebut", dateDebut);
+                cmd.Parameters.AddWithValue("@dateFin", dateFin);
+
+                using var reader = cmd.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    string idCommande = reader["id_commande"].ToString();
+                    string dateCommande = reader["date_commande"].ToString();
+                    commandes.Add($"Commande ID: {idCommande}, Date: {dateCommande}");
+                }
+
+                connection.Close();
+            }
+            catch (Exception ex)
+            {
+                Affichage.AfficherErreur(ex.Message);
+            }
+
+            return commandes;
+        }
+
+        public static void AfficherMoyennePrixCommandes()
+        {
+            Console.Clear();
+            AfficherEntete("MOYENNE DES PRIX DES COMMANDES");
+
+            // Logique pour calculer et afficher la moyenne des prix des commandes
+            double moyennePrix = CalculerMoyennePrixCommandes();
+            Console.WriteLine($"Moyenne des prix des commandes : {moyennePrix}€");
+
+            AttendreInteraction();
+        }
+
+        private static double CalculerMoyennePrixCommandes()
+        {
+            double totalPrix = 0;
+            int nombreCommandes = 0;
+
+            try
+            {
+                using var connection = new MySqlConnection("SERVER=localhost;PORT=3306;DATABASE=liv_in_paris;UID=root;PASSWORD=root");
+                connection.Open();
+
+                using var cmd = new MySqlCommand(
+                    "SELECT AVG(prix_pp) AS moyenne_prix FROM Plat WHERE idPlat IN (SELECT idPlat FROM Ligne_Commande)",
+                    connection);
+
+                var result = cmd.ExecuteScalar();
+                if (result != DBNull.Value)
+                {
+                    return Convert.ToDouble(result);
+                }
+
+                connection.Close();
+            }
+            catch (Exception ex)
+            {
+                Affichage.AfficherErreur(ex.Message);
+            }
+
+            return 0;
+        }
+
+        public static void AfficherMoyenneCompteClient()
+        {
+            Console.Clear();
+            AfficherEntete("MOYENNE DES COMPTES CLIENTS");
+
+            // Logique pour calculer et afficher la moyenne des comptes clients
+            double moyenneCompte = CalculerMoyenneCompteClient();
+            Console.WriteLine($"Moyenne des comptes clients : {moyenneCompte}€");
+
+            AttendreInteraction();
+        }
+
+        private static double CalculerMoyenneCompteClient()
+        {
+            double totalCompte = 0;
+            int nombreClients = 0;
+
+            try
+            {
+                using var connection = new MySqlConnection("SERVER=localhost;PORT=3306;DATABASE=liv_in_paris;UID=root;PASSWORD=root");
+                connection.Open();
+
+                using var cmd = new MySqlCommand(
+                    "SELECT AVG(prix_pp) AS moyenne_compte FROM Commande",
+                    connection);
+
+                var result = cmd.ExecuteScalar();
+                if (result != DBNull.Value)
+                {
+                    return Convert.ToDouble(result);
+                }
+
+                connection.Close();
+            }
+            catch (Exception ex)
+            {
+                Affichage.AfficherErreur(ex.Message);
+            }
+
+            return 0;
+        }
+
+        public static void AfficherCommandesParClient()
+        {
+            Console.Clear();
+            AfficherEntete("COMMANDES PAR CLIENT");
+
+            Console.Write("Entrez l'ID du client : ");
+            string idClient = Console.ReadLine();
+
+            // Logique pour afficher les commandes par client
+            var commandes = ObtenirCommandesParClient(idClient);
+            AfficherListe(commandes, "Commandes par client");
+        }
+
+        private static List<string> ObtenirCommandesParClient(string idClient)
+        {
+            var commandes = new List<string>();
+
+            try
+            {
+                using var connection = new MySqlConnection("SERVER=localhost;PORT=3306;DATABASE=liv_in_paris;UID=root;PASSWORD=root");
+                connection.Open();
+
+                using var cmd = new MySqlCommand(
+                    "SELECT id_commande, date_commande FROM Commande WHERE id_commande IN (SELECT id_commande FROM Est_Composee WHERE id_livraison IN (SELECT id_livraison FROM Livraison_P WHERE telephone_P = @idClient))",
+                    connection);
+                cmd.Parameters.AddWithValue("@idClient", idClient);
+
+                using var reader = cmd.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    string idCommande = reader["id_commande"].ToString();
+                    string dateCommande = reader["date_commande"].ToString();
+                    commandes.Add($"Commande ID: {idCommande}, Date: {dateCommande}");
+                }
+
+                connection.Close();
+            }
+            catch (Exception ex)
+            {
+                Affichage.AfficherErreur(ex.Message);
+            }
+
+            return commandes;
         }
     }
 }
