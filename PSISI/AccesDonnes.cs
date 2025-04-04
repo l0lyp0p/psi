@@ -1,6 +1,6 @@
-﻿using MySql.Data.MySqlClient;
+using MySql.Data.MySqlClient;
 
-namespace PSISI
+namespace PSI
 {
     public class AccesDonnes
     {
