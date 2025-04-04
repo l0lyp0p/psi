@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -176,11 +177,213 @@ namespace PSISI2
         private double ConvertirEnDouble(string valeur)
         {
             double resultat;
-            if (double.TryParse(valeur.Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out resultat))
+            if (double.TryParse(valeur.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out resultat))
             {
                 return resultat;
             }
             return 0.0;
+        }
+
+        /// <summary>
+        /// Reconstruit le chemin à partir des prédécesseurs.
+        /// </summary>
+        /// <param name="predecessors">Dictionnaire des prédécesseurs.</param>
+        /// <param name="start">Noeud de départ.</param>
+        /// <param name="end">Noeud de fin.</param>
+        /// <returns>La liste des noeuds formant le chemin.</returns>
+        private List<Noeud<T>> ReconstruireChemin(Dictionary<Noeud<T>, Noeud<T>> predecessors, Noeud<T> start, Noeud<T> end)
+        {
+            List<Noeud<T>> path = new List<Noeud<T>>();
+            for (Noeud<T> at = end; at != null; at = predecessors.GetValueOrDefault(at))
+            {
+                path.Insert(0, at);
+            }
+
+            if (path.Count > 0 && path[0] == start)
+            {
+                return path;
+            }
+            else
+            {
+                return new List<Noeud<T>>(); // Chemin non trouvé
+            }
+        }
+
+        /// <summary>
+        /// Trouve le plus court chemin en utilisant l'algorithme de Dijkstra.
+        /// </summary>
+        /// <param name="start">Noeud de départ.</param>
+        /// <param name="end">Noeud de fin.</param>
+        /// <returns>Le chemin et le temps total.</returns>
+        public (List<Noeud<T>> Path, double TotalTime) Dijkstra(Noeud<T> start, Noeud<T> end)
+        {
+            Dictionary<Noeud<T>, double> distances = new Dictionary<Noeud<T>, double>();
+            Dictionary<Noeud<T>, Noeud<T>> predecessors = new Dictionary<Noeud<T>, Noeud<T>>();
+            PriorityQueue<Noeud<T>, double> priorityQueue = new PriorityQueue<Noeud<T>, double>();
+
+            foreach (Noeud<T> node in Noeuds.Values)
+            {
+                distances[node] = double.PositiveInfinity;
+            }
+            distances[start] = 0;
+            priorityQueue.Enqueue(start, 0);
+
+            while (priorityQueue.Count > 0)
+            {
+                Noeud<T> current = priorityQueue.Dequeue();
+                if (current == end)
+                {
+                    break;
+                }
+
+                foreach (Lien<T> lien in Liens.Where(l => l.Depart == current))
+                {
+                    Noeud<T> neighbor = lien.Arrivee;
+                    double tentative = distances[current] + lien.Poids;
+                    if (tentative < distances[neighbor])
+                    {
+                        distances[neighbor] = tentative;
+                        predecessors[neighbor] = current;
+                        priorityQueue.Enqueue(neighbor, tentative);
+                    }
+                }
+            }
+
+            // Reconstruction du chemin
+            List<Noeud<T>> path = ReconstruireChemin(predecessors, start, end);
+            return (path, distances[end]);
+        }
+
+        /// <summary>
+        /// Trouve le plus court chemin en utilisant l'algorithme de Bellman-Ford.
+        /// </summary>
+        /// <param name="start">Noeud de départ.</param>
+        /// <param name="end">Noeud de fin.</param>
+        /// <returns>Le chemin et le temps total.</returns>
+        public (List<Noeud<T>> Path, double TotalTime) BellmanFord(Noeud<T> start, Noeud<T> end)
+        {
+            Dictionary<Noeud<T>, double> distances = new Dictionary<Noeud<T>, double>();
+            Dictionary<Noeud<T>, Noeud<T>> predecessors = new Dictionary<Noeud<T>, Noeud<T>>();
+
+            foreach (Noeud<T> node in Noeuds.Values)
+            {
+                distances[node] = double.PositiveInfinity;
+            }
+            distances[start] = 0;
+
+            for (int i = 0; i < Noeuds.Count - 1; i++)
+            {
+                foreach (Lien<T> lien in Liens)
+                {
+                    if (distances[lien.Depart] + lien.Poids < distances[lien.Arrivee])
+                    {
+                        distances[lien.Arrivee] = distances[lien.Depart] + lien.Poids;
+                        predecessors[lien.Arrivee] = lien.Depart;
+                    }
+                }
+            }
+
+            // Vérification des cycles négatifs (optionnel)
+            foreach (Lien<T> lien in Liens)
+            {
+                if (distances[lien.Depart] + lien.Poids < distances[lien.Arrivee])
+                {
+                    throw new InvalidOperationException("Cycle négatif détecté");
+                }
+            }
+
+            return (ReconstruireChemin(predecessors, start, end), distances[end]);
+        }
+
+        /// <summary>
+        /// Trouve le plus court chemin en utilisant l'algorithme de Floyd-Warshall.
+        /// </summary>
+        /// <param name="start">Noeud de départ.</param>
+        /// <param name="end">Noeud de fin.</param>
+        /// <returns>Le chemin et le temps total.</returns>
+        public (List<Noeud<T>> Path, double TotalTime) FloydWarshall(Noeud<T> start, Noeud<T> end)
+        {
+            List<Noeud<T>> nodes = Noeuds.Values.ToList();
+            int n = nodes.Count;
+            double[,] dist = new double[n, n];
+            int[,] next = new int[n, n];
+
+            // Initialisation
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    dist[i, j] = i == j ? 0 : double.PositiveInfinity;
+                    next[i, j] = -1;
+                }
+            }
+
+            Dictionary<Noeud<T>, int> nodeIndex = nodes.Select((node, idx) => new { node, idx }).ToDictionary(x => x.node, x => x.idx);
+
+            foreach (Lien<T> lien in Liens)
+            {
+                int u = nodeIndex[lien.Depart];
+                int v = nodeIndex[lien.Arrivee];
+                if (dist[u, v] > lien.Poids)
+                {
+                    dist[u, v] = lien.Poids;
+                    next[u, v] = v;
+                }
+            }
+
+            // Algorithme
+            for (int k = 0; k < n; k++)
+            {
+                for (int i = 0; i < n; i++)
+                {
+                    for (int j = 0; j < n; j++)
+                    {
+                        if (dist[i, j] > dist[i, k] + dist[k, j])
+                        {
+                            dist[i, j] = dist[i, k] + dist[k, j];
+                            next[i, j] = next[i, k];
+                        }
+                    }
+                }
+            }
+
+            // Reconstruction
+            int startIdx = nodeIndex[start];
+            int endIdx = nodeIndex[end];
+            if (next[startIdx, endIdx] == -1)
+            {
+                return (new List<Noeud<T>>(), dist[startIdx, endIdx]);
+            }
+
+            List<Noeud<T>> path = new List<Noeud<T>>();
+            int current = startIdx;
+            while (current != endIdx)
+            {
+                path.Add(nodes[current]);
+                current = next[current, endIdx];
+            }
+            path.Add(nodes[endIdx]);
+
+            return (path, dist[startIdx, endIdx]);
+        }
+
+        /// <summary>
+        /// Visualise le chemin trouvé.
+        /// </summary>
+        /// <param name="chemin">Le chemin à visualiser.</param>
+        public void VisualiserChemin(List<Noeud<T>> chemin)
+        {
+            Console.WriteLine("Chemin parcouru :");
+            for (int i = 0; i < chemin.Count; i++)
+            {
+                Noeud<T> station = chemin[i];
+                Console.WriteLine($"{i + 1}. {station.Valeur} (ID: {station.Id})");
+                if (i < chemin.Count - 1)
+                {
+                    Lien<T> lien = Liens.First(l => l.Depart == station && l.Arrivee == chemin[i + 1]);
+                    Console.WriteLine($"   ↓ Ligne {lien.LineId} ({lien.Poids} minutes)");
+                }
+            }
         }
     }
 }
