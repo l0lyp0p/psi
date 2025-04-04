@@ -1,10 +1,13 @@
-﻿using MySql.Data.MySqlClient;
+using MySql.Data.MySqlClient;
+using System;
+using System.Collections.Generic;
 
-namespace PSISI
+namespace PSI
 {
     public class Application
     {
         private AccesDonnes access;
+
         public static void Main(string[] args)
         {
             Application app = new Application();
@@ -13,7 +16,7 @@ namespace PSISI
 
         private void Demarrer()
         {
-            access = new AccesDonnes("SERVER=localhost;PORT=3306;DATABASE=liv_in_paris;UID=root;PASSWORD=root");
+            access = new AccesDonnes("SERVER=localhost;PORT=3306;DATABASE=liv_in_paris;UID=root;PASSWORD=root!");
 
             Affichage.InitialiserConsole();
             ExecuterMenuPrincipal();
@@ -55,12 +58,29 @@ namespace PSISI
                         AjouterCuisinier();
                         break;
                     case 9:
+                        Affichage.AfficherCommandes();
+                        break;
+                    case 10:
+                        Affichage.AfficherStatistiquesLivraisons();
+                        break;
+                    case 11:
+                        Affichage.AfficherCommandesParPeriode();
+                        break;
+                    case 12:
+                        Affichage.AfficherMoyennePrixCommandes();
+                        break;
+                    case 13:
+                        Affichage.AfficherMoyenneCompteClient();
+                        break;
+                    case 14:
+                        Affichage.AfficherCommandesParClient();
+                        break;
+                    case 15:
                         continuer = false;
+                        Affichage.AfficherMessageConfirmation("Application fermée");
                         break;
                 }
             }
-
-            Affichage.AfficherMessageConfirmation("Application fermée");
         }
 
         private void AfficherClients()
@@ -156,17 +176,15 @@ namespace PSISI
             {
                 var (nom, prenom, adresse, email, codePostal, ville, idUtilisateur) = Affichage.AfficherFormulaireAjoutClientP();
 
-                // Vérifiez si l'utilisateur existe déjà
                 if (!UtilisateurExiste(idUtilisateur))
                 {
-                    // Si l'utilisateur n'existe pas, insérez-le d'abord
                     AjouterUtilisateur(idUtilisateur);
                 }
 
                 using var cmd = new MySqlCommand(
                     "INSERT INTO Client_P (telephone_P, nom, prénom, adresse, email, code_postal, ville, id_utilisateur) VALUES (@telephone_P, @nom, @prenom, @adresse, @email, @codePostal, @ville, @idUtilisateur)",
                     access.GetConnection());
-                cmd.Parameters.AddWithValue("@telephone_P", Guid.NewGuid().ToString()); // Générer un nouvel ID unique
+                cmd.Parameters.AddWithValue("@telephone_P", Guid.NewGuid().ToString());
                 cmd.Parameters.AddWithValue("@nom", nom);
                 cmd.Parameters.AddWithValue("@prenom", prenom);
                 cmd.Parameters.AddWithValue("@adresse", adresse);
@@ -214,7 +232,6 @@ namespace PSISI
         {
             try
             {
-                // Demandez à l'utilisateur d'entrer un mot de passe pour le nouvel utilisateur
                 Console.Write("Mot de passe pour le nouvel utilisateur : ");
                 string motDePasse = Console.ReadLine();
 
@@ -246,24 +263,20 @@ namespace PSISI
             {
                 var (idClient, nomPlat, quantite, prix) = Affichage.AfficherFormulaireAjoutCommande();
 
-                // Vérifiez si le plat existe
                 string idPlat = ObtenirIdPlat(nomPlat);
                 if (string.IsNullOrEmpty(idPlat))
                 {
-                    // Si le plat n'existe pas, insérez-le d'abord
                     idPlat = AjouterPlat(nomPlat, prix);
                 }
 
-                // Insérez d'abord dans la table Commande pour obtenir un id_commande
                 string idCommande = CreerCommande();
 
-                // Insérez ensuite dans la table Ligne_Commande
                 using var cmd = new MySqlCommand(
                     "INSERT INTO Ligne_Commande (id_livraison, date_livraison, idplat) VALUES (@idLivraison, @dateLivraison, @idPlat)",
                     access.GetConnection());
-                cmd.Parameters.AddWithValue("@idLivraison", Guid.NewGuid().ToString()); // Générer un nouvel ID unique
+                cmd.Parameters.AddWithValue("@idLivraison", Guid.NewGuid().ToString());
                 cmd.Parameters.AddWithValue("@dateLivraison", DateTime.Now.ToString("yyyy-MM-dd"));
-                cmd.Parameters.AddWithValue("@idPlat", idPlat); // Utilisez l'ID du plat
+                cmd.Parameters.AddWithValue("@idPlat", idPlat);
 
                 int rowsAffected = cmd.ExecuteNonQuery();
                 if (rowsAffected > 0)
@@ -304,7 +317,6 @@ namespace PSISI
         {
             try
             {
-                // Générer un nouvel ID unique pour le plat
                 string idPlat = Guid.NewGuid().ToString();
 
                 using var cmd = new MySqlCommand(
@@ -339,7 +351,7 @@ namespace PSISI
                 using var cmd = new MySqlCommand(
                     "INSERT INTO Commande (id_commande, date_commande) VALUES (@idCommande, @dateCommande)",
                     access.GetConnection());
-                string idCommande = Guid.NewGuid().ToString(); // Générer un nouvel ID unique
+                string idCommande = Guid.NewGuid().ToString();
                 cmd.Parameters.AddWithValue("@idCommande", idCommande);
                 cmd.Parameters.AddWithValue("@dateCommande", DateTime.Now.ToString("yyyy-MM-dd"));
 
@@ -367,10 +379,8 @@ namespace PSISI
             {
                 var (idEntreprise, nom, adresse, referent, idUtilisateur) = Affichage.AfficherFormulaireAjoutClientE();
 
-                // Vérifiez si l'utilisateur existe déjà
                 if (!UtilisateurExiste(idUtilisateur))
                 {
-                    // Si l'utilisateur n'existe pas, insérez-le d'abord
                     AjouterUtilisateur(idUtilisateur);
                 }
 
@@ -405,10 +415,8 @@ namespace PSISI
             {
                 var (telephone, nom, prenom, adresse, email, idUtilisateur) = Affichage.AfficherFormulaireAjoutCuisinier();
 
-                // Vérifiez si l'utilisateur existe déjà
                 if (!UtilisateurExiste(idUtilisateur))
                 {
-                    // Si l'utilisateur n'existe pas, insérez-le d'abord
                     AjouterUtilisateur(idUtilisateur);
                 }
 
